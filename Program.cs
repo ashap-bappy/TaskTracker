@@ -1,7 +1,5 @@
-﻿
-using System.Text.Json;
-using TaskTracker.Enums;
-using TaskTracker.Models;
+﻿using TaskTracker.Constants;
+using TaskTracker.Services;
 
 namespace TaskTracker
 {
@@ -9,7 +7,26 @@ namespace TaskTracker
     {
         static string directoryPath = @"D:\Educational\Code\Projects\TaskTracker\Data\";
         static string fileName = "tasks.json";
+
         static void Main(string[] args)
+        {
+            CheckCommandValidity(args);
+
+            var command = args[0];
+
+            switch (command)
+            {
+                case "add":
+                    var task = TaskService.CreateTask(args, directoryPath, fileName);
+                    TaskService.AddTask(task, directoryPath, fileName, TaskMessage.Added);
+                    break;
+                case "update":
+                    TaskService.UpdateTask(args, directoryPath, fileName);
+                    break;
+            }
+        }
+
+        private static void CheckCommandValidity(string[] args)
         {
             if (args.Length < 1)
             {
@@ -19,32 +36,25 @@ namespace TaskTracker
 
             var command = args[0];
 
-            switch(command)
+            if (command == "add" && args.Length < 2)
             {
-                case "add":
-                    AddTask(args);
-                    break;
-            }
-        }
-
-        private static void AddTask(string[] args)
-        {
-            if (args.Length < 2)
-            {
-                Console.WriteLine("Invalid command!!! Task name is missing.");
+                Console.WriteLine("Invalid command! Task name is missing.");
                 return;
             }
-            var task = new TaskModel
+
+            if (command == "update")
             {
-                Id = Guid.NewGuid().ToString(),
-                Description = args[1],
-                TaskStatus = Status.Todo,
-                CreatedAt = DateTime.Now,
-                UpdatedAt = DateTime.Now,
-            };
-            var path = Path.Combine(directoryPath, fileName);
-            string jsonString = JsonSerializer.Serialize(task, new JsonSerializerOptions { WriteIndented = true});
-            File.WriteAllText(path, jsonString);
+                if (args.Length < 2)
+                {
+                    Console.WriteLine("Invalid command!!! Task ID is missing.");
+                    return;
+                }
+                if (args.Length < 3)
+                {
+                    Console.WriteLine("Invalid command!!! Updated task name is missing.");
+                    return;
+                }
+            }
         }
     }
 }
