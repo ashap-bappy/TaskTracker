@@ -1,59 +1,37 @@
 ﻿using TaskTracker.Constants;
+using TaskTracker.Helpers;
+using TaskTracker.Interfaces;
 using TaskTracker.Services;
 
 namespace TaskTracker
 {
     public class Program
     {
-        static string directoryPath = @"D:\Educational\Code\Projects\TaskTracker\Data\";
-        static string fileName = "tasks.json";
+        const string fileName = "tasks.json";
 
         static void Main(string[] args)
         {
-            CheckCommandValidity(args);
+            IConfigurationService config = new ConfigurationService();
+            config.SetConfigValue(TaskData.FileName, fileName);
 
-            var command = args[0];
+            ITaskService taskService = new TaskService();
 
-            switch (command)
+            if (args.Length == 0)
             {
-                case "add":
-                    var task = TaskService.CreateTask(args, directoryPath, fileName);
-                    TaskService.AddTask(task, directoryPath, fileName, TaskMessage.Added);
-                    break;
-                case "update":
-                    TaskService.UpdateTask(args, directoryPath, fileName);
-                    break;
-            }
-        }
-
-        private static void CheckCommandValidity(string[] args)
-        {
-            if (args.Length < 1)
-            {
-                Console.WriteLine("Invalid command!!!");
+                Console.WriteLine("Invalid command! Please try again.");
                 return;
             }
 
-            var command = args[0];
+            var commandResolver = new CommandResolver(config, taskService);
+            var command = commandResolver.ResolveCommand(args[0]);
 
-            if (command == "add" && args.Length < 2)
+            if (command == null)
             {
-                Console.WriteLine("Invalid command! Task name is missing.");
-                return;
+                Console.WriteLine("Invalid command! Please try again.");
             }
-
-            if (command == "update")
+            else
             {
-                if (args.Length < 2)
-                {
-                    Console.WriteLine("Invalid command!!! Task ID is missing.");
-                    return;
-                }
-                if (args.Length < 3)
-                {
-                    Console.WriteLine("Invalid command!!! Updated task name is missing.");
-                    return;
-                }
+                command.Execute(args);
             }
         }
     }

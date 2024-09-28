@@ -1,65 +1,18 @@
 ﻿using System.Text.Json;
-using TaskTracker.Constants;
+using System.Text.Json.Serialization;
 using TaskTracker.Enums;
+using TaskTracker.Helpers;
+using TaskTracker.Interfaces;
 using TaskTracker.Models;
 
 namespace TaskTracker.Services
 {
-    public class TaskService
+    public class TaskService : ITaskService
     {
-        public static void AddTask(TaskModel task, string directoryPath, string fileName, string message)
+        public TaskModel CreateTask(string[] args, string fileName)
         {
-            try
-            {
-                List<TaskModel> tasks = GetAllTasks(directoryPath, fileName);
-                tasks.Add(task);
-                var path = Path.Combine(directoryPath, fileName);
-                var jsonString = JsonSerializer.Serialize(tasks, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(path, jsonString);
-
-                Console.WriteLine($"Task {message} successfully.");
-            }
-            catch (IOException ioEx)
-            {
-                Console.WriteLine($"Error writing to the file: {ioEx.Message}");
-            }
-            catch (JsonException jsonEx)
-            {
-                Console.WriteLine($"Error serializing the tasks: {jsonEx.Message}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"An error occurred: {ex.Message}");
-            }
-        }
-
-        public static void UpdateTask(string[] args, string directoryPath, string fileName)
-        {
-            try
-            {
-                int.TryParse(args[1], out int taskId);
-                var taskName = args[2];
-                List<TaskModel> tasks = GetAllTasks(directoryPath, fileName);
-                var task = tasks.FirstOrDefault(task => task.Id == taskId);
-
-                if (task == null)
-                {
-                    throw new Exception($"No task found with Id: {taskId}");
-                }
-
-                task.Description = taskName;
-                task.UpdatedAt = DateTime.Now;
-                AddTask(task, directoryPath, fileName, TaskMessage.Updated);
-            }
-            catch (Exception e)
-            {
-                throw new Exception(e.Message);
-            }
-        }
-
-        public static TaskModel CreateTask(string[] args, string directoryPath, string fileName)
-        {
-            int taskId = GenerateTaskId(directoryPath, fileName);
+            var tasks = GetAllTasks(fileName);
+            int taskId = TaskHelper.GenerateTaskId(tasks);
             var task = new TaskModel
             {
                 Id = ++taskId,
@@ -68,32 +21,77 @@ namespace TaskTracker.Services
                 CreatedAt = DateTime.Now,
                 UpdatedAt = DateTime.Now,
             };
+            return task;
+        }
+        public void AddTask(TaskModel task, string fileName)
+        {
+            try
+            {
+                var tasks = GetAllTasks(fileName);
+                tasks.Add(task);
+                SaveTasksToFile(tasks, fileName);
+                Console.WriteLine($"Task added successfully with ID: {task.Id}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error adding task: {ex.Message}");
+            }
+        }
 
+        public void UpdateTask(string[] args, string fileName)
+        {
+            try
+            {
+                int.TryParse(args[1], out int taskId);
+                var tasks = GetAllTasks(fileName);
+                var task = GetTaskByTaskId(taskId, tasks, fileName);
+
+                if (task == null)
+                {
+                    Console.WriteLine($"No task found with ID: {taskId}");
+                    return;
+                }
+
+                UpdateTaskProperties(args, task);
+                SaveTasksToFile(tasks, fileName);
+                Console.WriteLine($"Task updated successfully with ID: {taskId}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating task: {ex.Message}");
+            }
+        }
+
+        #region Private Methods
+        private static void UpdateTaskProperties(string[] args, TaskModel task)
+        {
+            var taskName = args[2];
+            task.Description = taskName;
+            task.UpdatedAt = DateTime.Now;
+        }
+
+        private TaskModel GetTaskByTaskId(int taskId, List<TaskModel> tasks, string fileName)
+        {
+            var task = tasks.FirstOrDefault(t => t.Id == taskId);
             return task;
         }
 
-        #region Private
-        private static int GenerateTaskId(string directoryPath, string fileName)
-        {
-            var tasks = GetAllTasks(directoryPath, fileName);
-            var taskId = tasks.Any() ? tasks.Max(task => task.Id) : 0;
-            return taskId;
-        }
-        private static List<TaskModel> GetAllTasks(string directoryPath, string fileName)
+        private static List<TaskModel> GetAllTasks(string fileName)
         {
             List<TaskModel> tasks = new List<TaskModel>();
 
             try
             {
-                string path = Path.Combine(directoryPath, fileName);
-
-                if (!File.Exists(path))
+                if (!File.Exists(fileName))
                 {
                     return tasks;
                 }
 
-                string jsonString = File.ReadAllText(path);
-                tasks = JsonSerializer.Deserialize<List<TaskModel>>(jsonString) ?? new List<TaskModel>();
+                string jsonString = File.ReadAllText(fileName);
+                tasks = JsonSerializer.Deserialize<List<TaskModel>>(jsonString, new JsonSerializerOptions
+                {
+                    Converters = { new JsonStringEnumConverter() }
+                }) ?? new List<TaskModel>();
             }
             catch (IOException ioEx)
             {
@@ -107,7 +105,33 @@ namespace TaskTracker.Services
             {
                 Console.WriteLine($"An error occurred: {ex.Message}");
             }
+
             return tasks;
+        }
+
+        private static void SaveTasksToFile(List<TaskModel> tasks, string fileName)
+        {
+            try
+            {
+                var jsonString = JsonSerializer.Serialize(tasks, new JsonSerializerOptions 
+                {
+                    WriteIndented = true,
+                    Converters = { new JsonStringEnumConverter() }
+                });
+                File.WriteAllText(fileName, jsonString);
+            }
+            catch (IOException ioEx)
+            {
+                Console.WriteLine($"Error writing to the file: {ioEx.Message}");
+            }
+            catch (JsonException jsonEx)
+            {
+                Console.WriteLine($"Error serializing the tasks: {jsonEx.Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+            }
         }
         #endregion
     }
