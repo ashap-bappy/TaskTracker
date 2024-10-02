@@ -4,8 +4,9 @@ namespace TaskTracker.Interfaces
 {
     public interface ITaskService
     {
-        TaskModel CreateTask(string[] args, string fileName);
-        void AddTask(TaskModel task, string fileName);
-        void UpdateTask(string[] args, string fileName);
+        TaskModel CreateTask(string[] args, string fileFullPath);
+        void AddTask(TaskModel task, string fileFullPath);
+        void UpdateTask(string[] args, string fileFullPath);
+        void DeleteTask(string[] args, string fileFullPath);
     }
 }

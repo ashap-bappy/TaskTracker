@@ -3,24 +3,24 @@ using TaskTracker.Interfaces;
 
 namespace TaskTracker.Commands
 {
-    public class UpdateCommand : ATaskCommand
+    public class UpdateCommand : ITaskCommand
     {
         private readonly ITaskService _taskService;
-        private readonly string _fileName;
+        private readonly string _fileFullPath;
 
-        public UpdateCommand(IConfigurationService config, ITaskService taskService) : base(config)
+        public UpdateCommand(IConfigurationService config, ITaskService taskService)
         {
-            _fileName = config.GetConfigValue<string>(TaskData.FileName);
+            _fileFullPath = config.GetConfigValue<string>(TaskData.FileFullPath);
             _taskService = taskService;
         }
 
-        protected override void ExecuteCommand(string[] args)
+        public void Execute(string[] args)
         {
             if (!IsUpdateArgumentsMissing(args))
             {
                 try
                 {
-                    _taskService.UpdateTask(args, _fileName);
+                    _taskService.UpdateTask(args, _fileFullPath);
                 }
                 catch (Exception ex)
                 {
@@ -36,7 +36,7 @@ namespace TaskTracker.Commands
         #region Private
         private static void ShowMissingArgumentsMessage(string[] args)
         {
-            string missingArgument = args.Length == 1 ? "Task ID" : "Updated task name";
+            string missingArgument = args.Length == 2 ? "Task ID" : "Updated task name";
             Console.WriteLine($"Invalid command!!! {missingArgument} is missing.");
         }
 

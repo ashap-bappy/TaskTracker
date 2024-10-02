@@ -3,39 +3,35 @@ using TaskTracker.Interfaces;
 
 namespace TaskTracker.Commands
 {
-    public class AddCommand : ITaskCommand
+    public class DeleteCommand : ITaskCommand
     {
         private readonly ITaskService _taskService;
         private readonly string _fileFullPath;
-
-        public AddCommand(IConfigurationService config, ITaskService taskService)
+        public DeleteCommand(IConfigurationService config, ITaskService taskService)
         {
-            _fileFullPath = config.GetConfigValue<string>(TaskData.FileFullPath);
             _taskService = taskService;
+            _fileFullPath = config.GetConfigValue<string>(TaskData.FileFullPath);
         }
-
         public void Execute(string[] args)
         {
-            if (!IsTaskNameArgumentMissing(args))
+            if (!IsTaskIdMissing(args))
             {
                 try
                 {
-                    var task = _taskService.CreateTask(args, _fileFullPath);
-                    _taskService.AddTask(task, _fileFullPath);
+                    _taskService.DeleteTask(args, _fileFullPath);
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error adding task: {ex.Message}");
+                    Console.WriteLine($"Error deleting task: {ex.Message}");
                 }
             }
             else
             {
-                Console.WriteLine($"Invalid command!!! Task name is missing.");
+                Console.WriteLine($"Invalid command!!! Task ID is missing");
             }
         }
 
-        #region Private
-        private static bool IsTaskNameArgumentMissing(string[] args)
+        private bool IsTaskIdMissing(string[] args)
         {
             if (args.Length < 2)
             {
@@ -43,6 +39,5 @@ namespace TaskTracker.Commands
             }
             return false;
         }
-        #endregion
     }
 }

@@ -12,7 +12,8 @@ namespace TaskTracker.Helpers
             _command = new Dictionary<string, ITaskCommand>
             {
                 {"add", new AddCommand(config, taskService) },
-                {"update", new UpdateCommand(config, taskService) }
+                {"update", new UpdateCommand(config, taskService) },
+                {"delete", new DeleteCommand(config, taskService) }
             };
         }
 

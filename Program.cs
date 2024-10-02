@@ -11,10 +11,7 @@ namespace TaskTracker
 
         static void Main(string[] args)
         {
-            IConfigurationService config = new ConfigurationService();
-            config.SetConfigValue(TaskData.FileName, fileName);
-
-            ITaskService taskService = new TaskService();
+            IConfigurationService config = SetupConfigurationSettings();
 
             if (args.Length == 0)
             {
@@ -22,6 +19,7 @@ namespace TaskTracker
                 return;
             }
 
+            ITaskService taskService = new TaskService();
             var commandResolver = new CommandResolver(config, taskService);
             var command = commandResolver.ResolveCommand(args[0]);
 
@@ -34,5 +32,25 @@ namespace TaskTracker
                 command.Execute(args);
             }
         }
+
+        #region Private
+        private static IConfigurationService SetupConfigurationSettings()
+        {
+            string directoryPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TaskTracker");
+
+            // Ensure the directory exists
+            if (!Directory.Exists(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
+            //Console.WriteLine($"Application data directory: {directoryPath}");
+
+            IConfigurationService config = new ConfigurationService();
+            config.SetConfigValue(TaskData.DirectoryPath, directoryPath);
+            config.SetConfigValue(TaskData.FileName, fileName);
+            config.SetConfigValue(TaskData.FileFullPath, Path.Combine(directoryPath, fileName));
+            return config;
+        } 
+        #endregion
     }
 }

@@ -9,9 +9,9 @@ namespace TaskTracker.Services
 {
     public class TaskService : ITaskService
     {
-        public TaskModel CreateTask(string[] args, string fileName)
+        public TaskModel CreateTask(string[] args, string fileFullPath)
         {
-            var tasks = GetAllTasks(fileName);
+            var tasks = GetAllTasks(fileFullPath);
             int taskId = TaskHelper.GenerateTaskId(tasks);
             var task = new TaskModel
             {
@@ -23,13 +23,13 @@ namespace TaskTracker.Services
             };
             return task;
         }
-        public void AddTask(TaskModel task, string fileName)
+        public void AddTask(TaskModel task, string fileFullPath)
         {
             try
             {
-                var tasks = GetAllTasks(fileName);
+                var tasks = GetAllTasks(fileFullPath);
                 tasks.Add(task);
-                SaveTasksToFile(tasks, fileName);
+                SaveTasksToFile(tasks, fileFullPath);
                 Console.WriteLine($"Task added successfully with ID: {task.Id}");
             }
             catch (Exception ex)
@@ -38,13 +38,13 @@ namespace TaskTracker.Services
             }
         }
 
-        public void UpdateTask(string[] args, string fileName)
+        public void UpdateTask(string[] args, string fileFullPath)
         {
             try
             {
                 int.TryParse(args[1], out int taskId);
-                var tasks = GetAllTasks(fileName);
-                var task = GetTaskByTaskId(taskId, tasks, fileName);
+                var tasks = GetAllTasks(fileFullPath);
+                var task = GetTaskById(taskId, tasks);
 
                 if (task == null)
                 {
@@ -53,12 +53,38 @@ namespace TaskTracker.Services
                 }
 
                 UpdateTaskProperties(args, task);
-                SaveTasksToFile(tasks, fileName);
+                SaveTasksToFile(tasks, fileFullPath);
                 Console.WriteLine($"Task updated successfully with ID: {taskId}");
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error updating task: {ex.Message}");
+            }
+        }
+
+        public void DeleteTask(string[] args, string fileFullPath)
+        {
+            try
+            {
+                int.TryParse(args[1], out int taskId);
+                var tasks = GetAllTasks(fileFullPath);
+
+                if (!tasks.Exists(t => t.Id == taskId))
+                {
+                    Console.WriteLine($"No task found with ID: {taskId}");
+                    return;
+                }
+                else
+                {
+                    tasks.RemoveAll(t => t.Id == taskId);
+                }
+
+                SaveTasksToFile(tasks, fileFullPath);
+                Console.WriteLine($"Task deleted successfully with ID: {taskId}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error deleting task: {ex.Message}");
             }
         }
 
@@ -70,24 +96,24 @@ namespace TaskTracker.Services
             task.UpdatedAt = DateTime.Now;
         }
 
-        private TaskModel GetTaskByTaskId(int taskId, List<TaskModel> tasks, string fileName)
+        private TaskModel GetTaskById(int taskId, List<TaskModel> tasks)
         {
             var task = tasks.FirstOrDefault(t => t.Id == taskId);
             return task;
         }
 
-        private static List<TaskModel> GetAllTasks(string fileName)
+        private static List<TaskModel> GetAllTasks(string fileFullPath)
         {
             List<TaskModel> tasks = new List<TaskModel>();
 
             try
             {
-                if (!File.Exists(fileName))
+                if (!File.Exists(fileFullPath))
                 {
                     return tasks;
                 }
 
-                string jsonString = File.ReadAllText(fileName);
+                string jsonString = File.ReadAllText(fileFullPath);
                 tasks = JsonSerializer.Deserialize<List<TaskModel>>(jsonString, new JsonSerializerOptions
                 {
                     Converters = { new JsonStringEnumConverter() }
@@ -109,7 +135,7 @@ namespace TaskTracker.Services
             return tasks;
         }
 
-        private static void SaveTasksToFile(List<TaskModel> tasks, string fileName)
+        private static void SaveTasksToFile(List<TaskModel> tasks, string fileFullPath)
         {
             try
             {
@@ -118,7 +144,9 @@ namespace TaskTracker.Services
                     WriteIndented = true,
                     Converters = { new JsonStringEnumConverter() }
                 });
-                File.WriteAllText(fileName, jsonString);
+                //Console.WriteLine($"BaseDirectory: {AppContext.BaseDirectory}");
+                //Console.WriteLine($"Saving file path: {fileFullPath}");
+                File.WriteAllText(fileFullPath, jsonString);
             }
             catch (IOException ioEx)
             {
@@ -133,6 +161,7 @@ namespace TaskTracker.Services
                 Console.WriteLine($"An error occurred: {ex.Message}");
             }
         }
+
         #endregion
     }
 }

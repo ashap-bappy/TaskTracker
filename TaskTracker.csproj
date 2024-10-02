@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <Version>1.1.9.2801</Version>
+        <Version>1.1.10.0201</Version>
         <OutputType>Exe</OutputType>
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
@@ -10,9 +10,5 @@
         <ToolCommandName>task-cli</ToolCommandName>
         <PackageOutputPath>./nupkg</PackageOutputPath>
     </PropertyGroup>
-
-    <ItemGroup>
-        <Folder Include="Data\" />
-    </ItemGroup>
 
 </Project>
